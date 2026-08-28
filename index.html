@@ -249,24 +249,35 @@ function schedule(now){
 }
 function fmtTime(d,tz){return new Intl.DateTimeFormat("ru-RU",{timeZone:tz,hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(d)}
 function fmtGreg(d,tz){return new Intl.DateTimeFormat("ru-RU",{timeZone:tz,weekday:"long",day:"numeric",month:"long"}).format(d)}
+function civilYMD(d,tz){
+  const p=new Intl.DateTimeFormat("en-US",{timeZone:tz,year:"numeric",month:"numeric",day:"numeric"}).formatToParts(d);
+  const n=function(t){return +p.find(function(x){return x.type===t}).value};
+  return {y:n("year"),m:n("month"),d:n("day")};
+}
+function gregorianToHijri(gy,gm,gd){
+  // Арифметический (kuwaiti) календарь ≈ Умм аль-Кура, без Intl
+  var y=gy|0, m=gm|0, d=gd|0;
+  var jd = Math.floor((1461*(y+4800+Math.floor((m-14)/12)))/4)+
+    Math.floor((367*(m-2-12*Math.floor((m-14)/12)))/12)-
+    Math.floor((3*Math.floor((y+4900+Math.floor((m-14)/12))/100))/4)+d-32075;
+  var l=jd-1948440+10632;
+  var n=Math.floor((l-1)/10631);
+  l=l-10631*n+354;
+  var j=Math.floor((10985-l)/5316)*Math.floor(50*l/17719)+Math.floor(l/5670)*Math.floor(43*l/15238);
+  l=l-Math.floor((30-j)/15)*Math.floor(17719*j/50)-Math.floor(j/16)*Math.floor(15238*j/43)+29;
+  var hm=Math.floor(24*l/709);
+  var hd=l-Math.floor(709*hm/24);
+  var hy=30*n+j-30;
+  return {y:hy,m:hm,d:hd};
+}
 function fmtHijri(d,tz){
-  // Только числовые части Умм аль-Кура + русские названия месяцев хиджры.
-  // ru-RU long month для islamic часто даёт «марта … до н.э.» — это баг ICU.
-  const months=["мухаррам","сафар","рабиʿ I","рабиʿ II","джумада I","джумада II","раджаб","шаʿбан","рамадан","шавваль","зу-ль-каʿда","зу-ль-хиджа"];
-  const cals=["en-u-ca-islamic-umalqura","en-SA-u-ca-islamic-umalqura","en-u-ca-islamic-civil","en-u-ca-islamic"];
-  for(let i=0;i<cals.length;i++){
-    try{
-      const parts=new Intl.DateTimeFormat(cals[i],{timeZone:tz,day:"numeric",month:"numeric",year:"numeric"}).formatToParts(d);
-      const get=function(t){const p=parts.find(function(x){return x.type===t});return p?p.value:""};
-      const day=parseInt(get("day"),10);
-      const month=parseInt(get("month"),10);
-      const year=parseInt(get("year"),10);
-      if(!day||!month||!year||year<1000) continue;
-      const mi=Math.max(1,Math.min(12,month));
-      return day+" "+months[mi-1]+" "+year+" г.х.";
-    }catch(e){}
-  }
-  return "";
+  var months=["мухаррам","сафар","рабиʿ I","рабиʿ II","джумада I","джумада II","раджаб","шаʿбан","рамадан","шавваль","зу-ль-каʿда","зу-ль-хиджа"];
+  try{
+    var g=civilYMD(d,tz);
+    var h=gregorianToHijri(g.y,g.m,g.d);
+    if(!h.y||!h.m||!h.d||h.m<1||h.m>12) return "";
+    return h.d+" "+months[h.m-1]+" "+h.y+" г.х.";
+  }catch(e){ return ""; }
 }
 function remain(ms){
   ms=Math.max(0,Math.floor(ms/1000));
