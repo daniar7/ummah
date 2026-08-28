@@ -249,7 +249,31 @@ function schedule(now){
 }
 function fmtTime(d,tz){return new Intl.DateTimeFormat("ru-RU",{timeZone:tz,hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(d)}
 function fmtGreg(d,tz){return new Intl.DateTimeFormat("ru-RU",{timeZone:tz,weekday:"long",day:"numeric",month:"long"}).format(d)}
-function fmtHijri(d,tz){return new Intl.DateTimeFormat("ru-RU-u-ca-islamic",{timeZone:tz,day:"numeric",month:"long",year:"numeric"}).format(d)}
+function fmtHijri(d,tz){
+  // Умм аль-Кура (Саудовская Аравия) — как в большинстве исламских приложений.
+  // ca-islamic (астрономический) часто даёт ±1 день ошибку.
+  const opts={timeZone:tz,day:"numeric",month:"long",year:"numeric"};
+  const cals=["ru-RU-u-ca-islamic-umalqura","ar-SA-u-ca-islamic-umalqura","ru-RU-u-ca-islamic-civil","ru-RU-u-ca-islamic"];
+  for(let i=0;i<cals.length;i++){
+    try{
+      const s=new Intl.DateTimeFormat(cals[i],opts).format(d);
+      if(s&&!/invalid/i.test(s)){
+        // Если месяц пришёл по-арабски — оставляем; по-русски Intl иногда пишет «месяц N»
+        return s.replace(/\s*г\.?\s*(AH)?\s*$/i,"").replace(/\s*AH\s*$/i,"").trim()+" г.х.";
+      }
+    }catch(e){}
+  }
+  // Ручной fallback через islamic-umalqura parts + русские названия
+  try{
+    const parts=new Intl.DateTimeFormat("en-u-ca-islamic-umalqura",{timeZone:tz,day:"numeric",month:"numeric",year:"numeric"}).formatToParts(d);
+    const get=t=>(parts.find(p=>p.type===t)||{}).value;
+    const months=["мухаррам","сафар","рабиʿ I","рабиʿ II","джумада I","джумада II","раджаб","шаʿбан","рамадан","шавваль","зу-ль-каʿда","зу-ль-хиджа"];
+    const m=Math.max(1,Math.min(12,parseInt(get("month"),10)||1));
+    return (get("day")||"")+" "+months[m-1]+" "+(get("year")||"")+" г.х.";
+  }catch(e){
+    return "";
+  }
+}
 function remain(ms){
   ms=Math.max(0,Math.floor(ms/1000));
   const h=Math.floor(ms/3600),m=Math.floor((ms%3600)/60),s=ms%60;
