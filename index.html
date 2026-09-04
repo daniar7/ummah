@@ -77,26 +77,26 @@ html[data-theme="olive"]{
   --border:color-mix(in oklab, var(--fg) 12%, transparent);
   --border-strong:color-mix(in oklab, var(--fg) 22%, transparent);
 }
-/* Blue — deep slate blue */
+/* Blue — deep blue background */
 html[data-theme="blue"]{
-  --bg:#0c1018;--surface:#141a24;--surface-2:#1c2433;--fg:#e4e8f0;--muted:#8490a4;--subtle:#5a6578;
-  --accent:#7a9ec4;--accent-fg:#0c1018;--danger:#c47a72;
-  --border:color-mix(in oklab, var(--fg) 12%, transparent);
-  --border-strong:color-mix(in oklab, var(--fg) 22%, transparent);
+  --bg:#0a1628;--surface:#122038;--surface-2:#1a2c4a;--fg:#e8eef8;--muted:#7a96b8;--subtle:#4a6288;
+  --accent:#5a9fd4;--accent-fg:#0a1628;--danger:#d08078;
+  --border:color-mix(in oklab, var(--fg) 14%, transparent);
+  --border-strong:color-mix(in oklab, var(--fg) 24%, transparent);
 }
-/* Green — soft forest emerald */
+/* Green — deep emerald background */
 html[data-theme="green"]{
-  --bg:#0a120e;--surface:#121c16;--surface-2:#1a2820;--fg:#e2ece6;--muted:#7d9588;--subtle:#53665c;
-  --accent:#6fbf96;--accent-fg:#0a120e;--danger:#c47a72;
-  --border:color-mix(in oklab, var(--fg) 12%, transparent);
-  --border-strong:color-mix(in oklab, var(--fg) 22%, transparent);
+  --bg:#071a12;--surface:#0e281c;--surface-2:#143628;--fg:#e4f2ea;--muted:#6aaa88;--subtle:#3e7858;
+  --accent:#3dcc8c;--accent-fg:#071a12;--danger:#d08078;
+  --border:color-mix(in oklab, var(--fg) 14%, transparent);
+  --border-strong:color-mix(in oklab, var(--fg) 24%, transparent);
 }
-/* Violet — black-purple */
+/* Violet — deep purple-black background */
 html[data-theme="violet"]{
-  --bg:#0e0b14;--surface:#16121f;--surface-2:#1f1a2c;--fg:#ebe6f2;--muted:#9086a3;--subtle:#625a74;
-  --accent:#a78bc9;--accent-fg:#0e0b14;--danger:#c47a72;
-  --border:color-mix(in oklab, var(--fg) 12%, transparent);
-  --border-strong:color-mix(in oklab, var(--fg) 22%, transparent);
+  --bg:#12081c;--surface:#1c102c;--surface-2:#28183c;--fg:#f0e8f8;--muted:#a088c0;--subtle:#685088;
+  --accent:#b47ae8;--accent-fg:#12081c;--danger:#d08078;
+  --border:color-mix(in oklab, var(--fg) 14%, transparent);
+  --border-strong:color-mix(in oklab, var(--fg) 24%, transparent);
 }
 .settings-page{min-height:70vh;display:flex;flex-direction:column;gap:1.25rem;padding-bottom:2rem}
 .settings-head{display:flex;align-items:center;justify-content:space-between;gap:1rem}
@@ -213,7 +213,6 @@ const DHIKRS=[{"id":"subhanallah","arabic":"سُبْحَانَ اللّٰهِ","
 
 const GROUPS=[{id:"sacred",key:"group_sacred"},{id:"russia",key:"group_russia"},{id:"world",key:"group_world"}];
 const METHODS=[
-  {id:"DUM_RT",label:"ДУМ РТ"},
   {id:"DUM_RF",label:"ДУМ РФ (16°/15°)"},
   {id:"MuslimWorldLeague",label:"Лига исламского мира (18°/17°)"},
   {id:"UmmAlQura",label:"Умм аль-Кура (18.5° + 90м)"},
@@ -271,7 +270,7 @@ function save(p){Object.assign(ST,p);localStorage.setItem("ummah-html",JSON.stri
 const def=CITIES.find(c=>c.id==="moskva")||CITIES.find(c=>c.id==="kazan")||CITIES.find(c=>c.group==="russia")||CITIES[0];
 const ST=Object.assign({
   location:{kind:"city",cityId:def.id,name:def.name,lat:def.lat,lng:def.lng,timezone:def.timezone},
-  method:"DUM_RT",madhab:"Hanafi",theme:"dark",lang:"ru",dhikrToday:{},dhikrDay:"",favoriteNames:[]
+  method:"MuslimWorldLeague",madhab:"Hanafi",theme:"dark",lang:"ru",dhikrToday:{},dhikrDay:"",favoriteNames:[]
 },load());
 
 /* ========== i18n ========== */
@@ -370,7 +369,7 @@ const I18N = {
     tab_prayer: "Prayer", tab_names: "Names", tab_dhikr: "Dhikr", tab_qibla: "Qibla",
     next: "Next", next_tomorrow: "Next · tomorrow",
     in: "in", source: "Source", asr_hanafi: "asr hanafi", asr_shafi: "asr shafi",
-    settings: "Settings", theme: "Theme", theme_dark: "Dark", theme_light: "Light",
+    settings: "Settings", theme: "Theme", theme_dark: "Black", theme_light: "White", theme_olive: "Olive", theme_blue: "Blue", theme_green: "Green", theme_violet: "Violet",
     language: "Language", lang_ru: "Русский", lang_tt: "Татарча", lang_en: "English",
     place: "Location & calculation", place_hint: "City affects prayer times and qibla direction.",
     my_location: "My location", locating: "Locating…",
@@ -425,33 +424,13 @@ function civilDate(now,tz){
 }
 function methodParams(method){
   // Явные углы по таблице методов (Фаджр / Иша)
-  // DUM_RT: региональный (18°/15° + белые ночи); DUM_RF: 16°/15°
-  if(method==="DUM_RT") return new adhan.CalculationParameters("DUM_RT",18,15);
+  // DUM_RF: 16°/15°
   if(method==="DUM_RF") return new adhan.CalculationParameters("DUM_RF",16,15);
   // MWL 18/17, Egyptian 19.5/17.5, Karachi 18/18, ISNA 15/15,
   // Dubai 18.2/18.2, Kuwait 18/17.5, Singapore 20/18, Moonsighting 18/18,
   // UmmAlQura 18.5 + 90 мин, Qatar 18 + 90 мин, Turkey — встроенное приближение Diyanet
   if(adhan.CalculationMethod[method]) return adhan.CalculationMethod[method]();
   return adhan.CalculationMethod.MuslimWorldLeague();
-}
-function applyDumRtNightRules(pt){
-  // Белые ночи (ДУМ РТ): если ночь слишком короткая / нет настоящей ночи —
-  // Иша = Магриб + 1.5 ч, Фаджр = Восход − 2 ч
-  if(!pt||!pt.maghrib||!pt.sunrise) return pt;
-  const ishaFixed=new Date(pt.maghrib.getTime()+90*60*1000);
-  const fajrFixed=new Date(pt.sunrise.getTime()-120*60*1000);
-  let useFixed=false;
-  if(!pt.isha||!pt.fajr||isNaN(pt.isha.getTime())||isNaN(pt.fajr.getTime())) useFixed=true;
-  else if(pt.isha.getTime()>=pt.sunrise.getTime()) useFixed=true;
-  else {
-    // длительность «ночи» от иша до фаджра (с учётом перехода суток)
-    let fajrT=pt.fajr.getTime();
-    if(fajrT<=pt.isha.getTime()) fajrT+=86400000;
-    const nightH=(fajrT-pt.isha.getTime())/3600000;
-    if(nightH<3.5) useFixed=true;
-  }
-  if(useFixed){pt.isha=ishaFixed;pt.fajr=fajrFixed}
-  return pt;
 }
 function computePT(lat,lng,date,method,madhab){
   const coords=new adhan.Coordinates(lat,lng);
@@ -461,7 +440,6 @@ function computePT(lat,lng,date,method,madhab){
   // и ломает фаджр/иша во всех методах (сдвиг на ~1 час). MiddleOfTheNight = норма для РФ.
   params.highLatitudeRule=adhan.HighLatitudeRule.MiddleOfTheNight;
   const pt=new adhan.PrayerTimes(coords,date,params);
-  if(method==="DUM_RT") applyDumRtNightRules(pt);
   return pt;
 }
 function schedule(now){
@@ -731,7 +709,7 @@ function applyTheme(){
   document.documentElement.setAttribute("data-theme",t==="dark"?"":t);
   if(t==="dark") document.documentElement.removeAttribute("data-theme");
   else document.documentElement.setAttribute("data-theme",t);
-  const colors={dark:"#0b0f0e",light:"#f4f6f4",olive:"#12140f",blue:"#0c1018",green:"#0a120e",violet:"#0e0b14"};
+  const colors={dark:"#0b0f0e",light:"#f4f6f4",olive:"#12140f",blue:"#0a1628",green:"#071a12",violet:"#12081c"};
   try{
     var m=document.getElementById("meta-theme-color");
     if(m) m.setAttribute("content", colors[t]||"#0b0f0e");
@@ -985,7 +963,7 @@ updateNav();
     ST.location={kind:"city",cityId:d.id,name:d.name,lat:d.lat,lng:d.lng,timezone:d.timezone};
     try{localStorage.setItem("ummah-html",JSON.stringify(ST));}catch(e){}
   }
-  if(!METHODS.some(function(m){return m.id===ST.method;})) ST.method="DUM_RT";
+  if(!METHODS.some(function(m){return m.id===ST.method;})) ST.method="MuslimWorldLeague";
 if(["ru","tt","en"].indexOf(ST.lang)<0) ST.lang="ru";
 })();
 
