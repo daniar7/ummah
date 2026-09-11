@@ -213,6 +213,7 @@ const DHIKRS=[{"id":"subhanallah","arabic":"سُبْحَانَ اللّٰهِ","
 
 const GROUPS=[{id:"sacred",key:"group_sacred"},{id:"russia",key:"group_russia"},{id:"world",key:"group_world"}];
 const METHODS=[
+  {id:"DUM_RT",label:"ДУМ РТ"},
   {id:"DUM_RF",label:"ДУМ РФ (16°/15°)"},
   {id:"MuslimWorldLeague",label:"Лига исламского мира (18°/17°)"},
   {id:"UmmAlQura",label:"Умм аль-Кура (18.5° + 90м)"},
@@ -270,7 +271,7 @@ function save(p){Object.assign(ST,p);localStorage.setItem("ummah-html",JSON.stri
 const def=CITIES.find(c=>c.id==="moskva")||CITIES.find(c=>c.id==="kazan")||CITIES.find(c=>c.group==="russia")||CITIES[0];
 const ST=Object.assign({
   location:{kind:"city",cityId:def.id,name:def.name,lat:def.lat,lng:def.lng,timezone:def.timezone},
-  method:"MuslimWorldLeague",madhab:"Hanafi",theme:"dark",lang:"ru",dhikrToday:{},dhikrDay:"",favoriteNames:[]
+  method:"MuslimWorldLeague",madhab:"Hanafi",theme:"dark",lang:"ru",dhikrToday:{},dhikrDay:"",favoriteNames:[],notifEnabled:false,azanEnabled:false,notifPrayers:{fajr:true,dhuhr:true,asr:true,maghrib:true,isha:true}
 },load());
 
 /* ========== i18n ========== */
@@ -290,7 +291,7 @@ const I18N = {
     tasbih_done: "Тасбих завершён", tasbih_done_sub: "33 + 33 + 33 после намаза. Да примет Аллах.",
     to_dhikrs: "К зикрам", back: "Назад", target: "цель", cycles: "кругов", unlimited: "без ограничения",
     reset: "Сброс", qibla_title: "Кибла", qibla_hint: "Направление на Каабу",
-    close: "Закрыть", contact: "Связь", telegram: "Телеграм-канал", sadaqa: "Садака разработчикам",
+    close: "Закрыть", contact: "Связь", telegram: "Телеграм-канал", notif_title: "Уведомления о намазах", notif_enable: "Уведомления", notif_enable_sub: "Напоминать о времени намаза", azan_enable: "Азан", azan_enable_sub: "Голосовой азан (в приложении)", notif_prayers: "На какие намазы", notif_allow: "Разрешить уведомления", notif_allowed: "Уведомления разрешены", notif_denied: "Уведомления запрещены", notif_on: "вкл", notif_off: "выкл", sadaqa: "Садака разработчикам",
     sadaqa_note: "карта для садака пока отсутствует",
     group_sacred: "Священные города", group_russia: "Россия", group_world: "Мир",
     fajr: "Фаджр", sunrise: "Восход", dhuhr: "Зухр", asr: "Аср", maghrib: "Магриб", isha: "Иша",
@@ -335,7 +336,7 @@ const I18N = {
     tasbih_done: "Тәсбих тәмам", tasbih_done_sub: "33 + 33 + 33 намаздан соң. Аллаһ кабул итсен.",
     to_dhikrs: "Зикерләргә", back: "Кире", target: "максат", cycles: "түгәрәк", unlimited: "чиксез",
     reset: "Ташлау", qibla_title: "Кыйбла", qibla_hint: "Каабага юнәлеш",
-    close: "Ябу", contact: "Элемтә", telegram: "Телеграм-канал", sadaqa: "Сәдака эшләүчеләргә",
+    close: "Ябу", contact: "Элемтә", telegram: "Телеграм-канал", notif_title: "Намаз турында хәбәрләр", notif_enable: "Хәбәрләр", notif_enable_sub: "Намаз вакытын искә төшерү", azan_enable: "Азан", azan_enable_sub: "Тавышлы азан (кушымтада)", notif_prayers: "Кайсы намазларга", notif_allow: "Хәбәрләргә рөхсәт", notif_allowed: "Хәбәрләр рөхсәт ителгән", notif_denied: "Хәбәрләр тыелган", notif_on: "каб.", notif_off: "сүн.", sadaqa: "Сәдака эшләүчеләргә",
     sadaqa_note: "сәдака өчен карта әле юк",
     group_sacred: "Изге шәһәрләр", group_russia: "Россия", group_world: "Дөнья",
     fajr: "Иртәнге", sunrise: "Кояш чыгу", dhuhr: "Өйлә", asr: "Икенде", maghrib: "Ахшам", isha: "Ястү",
@@ -380,7 +381,7 @@ const I18N = {
     tasbih_done: "Tasbih complete", tasbih_done_sub: "33 + 33 + 33 after prayer. May Allah accept.",
     to_dhikrs: "To dhikrs", back: "Back", target: "target", cycles: "cycles", unlimited: "unlimited",
     reset: "Reset", qibla_title: "Qibla", qibla_hint: "Direction to the Kaaba",
-    close: "Close", contact: "Contact", telegram: "Telegram channel", sadaqa: "Sadaqah for developers",
+    close: "Close", contact: "Contact", telegram: "Telegram channel", notif_title: "Prayer notifications", notif_enable: "Notifications", notif_enable_sub: "Remind at prayer time", azan_enable: "Adhan", azan_enable_sub: "Voice adhan (in the app)", notif_prayers: "Which prayers", notif_allow: "Allow notifications", notif_allowed: "Notifications allowed", notif_denied: "Notifications blocked", notif_on: "on", notif_off: "off", sadaqa: "Sadaqah for developers",
     sadaqa_note: "card for sadaqah is not available yet",
     group_sacred: "Sacred cities", group_russia: "Russia", group_world: "World",
     fajr: "Fajr", sunrise: "Sunrise", dhuhr: "Dhuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha",
@@ -422,6 +423,76 @@ function civilDate(now,tz){
   const n=t=>+p.find(x=>x.type===t).value;
   return new Date(n("year"),n("month")-1,n("day"),12,0,0);
 }
+
+/* ===== ДУМ РТ: официальная таблица 2026–2035 ===== */
+var DUM_RT_CACHE={};
+var DUM_RT_LOADING=null;
+function dumRtYmd(date,tz){
+  try{
+    var p=new Intl.DateTimeFormat("en-CA",{timeZone:tz||"Europe/Moscow",year:"numeric",month:"2-digit",day:"2-digit"}).format(date);
+    // en-CA => YYYY-MM-DD
+    return p;
+  }catch(e){
+    var y=date.getFullYear(),m=date.getMonth()+1,d=date.getDate();
+    return y+"-"+(m<10?"0":"")+m+"-"+(d<10?"0":"")+d;
+  }
+}
+function dumRtMinsToDate(baseDate,mins,tz){
+  // baseDate is local civil noon-ish Date; build local Y-M-D + mins
+  var y=baseDate.getFullYear(),m=baseDate.getMonth(),d=baseDate.getDate();
+  var hh=Math.floor(mins/60), mm=mins%60;
+  // construct as local
+  return new Date(y,m,d,hh,mm,0,0);
+}
+function dumRtHasCity(name){
+  return !!(DUM_RT_CACHE[name]);
+}
+function loadDumRtCity(name){
+  if(!name) return Promise.resolve(null);
+  if(DUM_RT_CACHE[name]) return Promise.resolve(DUM_RT_CACHE[name]);
+  if(DUM_RT_LOADING&&DUM_RT_LOADING.name===name) return DUM_RT_LOADING.p;
+  var file="dum_rt/"+encodeURIComponent(name)+".json";
+  var p=fetch(file).then(function(r){
+    if(!r.ok) throw new Error("no table");
+    return r.json();
+  }).then(function(j){
+    DUM_RT_CACHE[name]=j;
+    return j;
+  }).catch(function(){
+    // try without encode for file systems
+    return fetch("dum_rt/"+name+".json").then(function(r){
+      if(!r.ok) throw new Error("no table");
+      return r.json();
+    }).then(function(j){ DUM_RT_CACHE[name]=j; return j; });
+  }).catch(function(){ return null; });
+  DUM_RT_LOADING={name:name,p:p};
+  return p;
+}
+function computePT_DUM_RT(loc,date,madhab){
+  var name=loc&&loc.name;
+  var table=name&&DUM_RT_CACHE[name];
+  if(!table) return null;
+  var ymd=dumRtYmd(date,loc.timezone);
+  var row=table[ymd];
+  if(!row) return null;
+  // [fajr, sunrise, dhuhr, asrShafi, asrHanafi, maghrib, isha]
+  var asrMins=(madhab==="Hanafi")?row[4]:row[3];
+  return {
+    fajr:dumRtMinsToDate(date,row[0],loc.timezone),
+    sunrise:dumRtMinsToDate(date,row[1],loc.timezone),
+    dhuhr:dumRtMinsToDate(date,row[2],loc.timezone),
+    asr:dumRtMinsToDate(date,asrMins,loc.timezone),
+    maghrib:dumRtMinsToDate(date,row[5],loc.timezone),
+    isha:dumRtMinsToDate(date,row[6],loc.timezone)
+  };
+}
+function ensureDumRtLoaded(){
+  if(ST.method!=="DUM_RT") return;
+  var name=ST.location&&ST.location.name;
+  if(!name||DUM_RT_CACHE[name]) return;
+  loadDumRtCity(name).then(function(){ try{render()}catch(e){} });
+}
+
 function methodParams(method){
   // Явные углы по таблице методов (Фаджр / Иша)
   // DUM_RF: 16°/15°
@@ -446,8 +517,19 @@ function schedule(now){
   const loc=ST.location;
   const today=civilDate(now,loc.timezone);
   const tom=new Date(today);tom.setDate(tom.getDate()+1);
-  const t=computePT(loc.lat,loc.lng,today,ST.method,ST.madhab);
-  const n=computePT(loc.lat,loc.lng,tom,ST.method,ST.madhab);
+  var t,n;
+  if(ST.method==="DUM_RT"){
+    t=computePT_DUM_RT(loc,today,ST.madhab);
+    n=computePT_DUM_RT(loc,tom,ST.madhab);
+    if(!t||!n){
+      // таблица ещё не загружена или нет города — fallback DUM_RF
+      t=computePT(loc.lat,loc.lng,today,"DUM_RF",ST.madhab);
+      n=computePT(loc.lat,loc.lng,tom,"DUM_RF",ST.madhab);
+    }
+  } else {
+    t=computePT(loc.lat,loc.lng,today,ST.method,ST.madhab);
+    n=computePT(loc.lat,loc.lng,tom,ST.method,ST.madhab);
+  }
   const slots=["fajr","sunrise","dhuhr","asr","maghrib","isha"].map(id=>({id,time:t[id]}));
   const prayers=slots.filter(s=>META[s.id].p);
   const up=prayers.find(p=>p.time>now);
@@ -703,6 +785,104 @@ function qiblaView(){
   '</div>';
 }
 
+
+/* ========== Notifications + Android WebView bridge ========== */
+function ensureNotifDefaults(){
+  if(typeof ST.notifEnabled!=="boolean") ST.notifEnabled=false;
+  if(typeof ST.azanEnabled!=="boolean") ST.azanEnabled=false;
+  if(!ST.notifPrayers||typeof ST.notifPrayers!=="object") ST.notifPrayers={fajr:true,dhuhr:true,asr:true,maghrib:true,isha:true};
+}
+ensureNotifDefaults();
+
+function requestNotifPermission(){
+  if(typeof Notification==="undefined"){
+    try{ if(window.AndroidBridge&&AndroidBridge.requestNotificationPermission) AndroidBridge.requestNotificationPermission(); }catch(e){}
+    try{ if(window.Android&&Android.requestNotificationPermission) Android.requestNotificationPermission(); }catch(e){}
+    try{ notifyAndroidSettings(); }catch(e){}
+    render();
+    return;
+  }
+  Notification.requestPermission().then(function(){ try{notifyAndroidSettings()}catch(e){} render(); }).catch(function(){ render(); });
+}
+
+function buildNotificationSchedule(days){
+  ensureNotifDefaults();
+  days=days||7;
+  var loc=ST.location, out=[], base=new Date();
+  if(!ST.notifEnabled) return out;
+  for(var d=0;d<days;d++){
+    var day=new Date(base.getFullYear(),base.getMonth(),base.getDate()+d,12,0,0);
+    var sch; try{ sch=schedule(day);}catch(e){ continue; }
+    (sch.slots||[]).forEach(function(s){
+      if(s.id==="sunrise") return;
+      if(ST.notifPrayers&&ST.notifPrayers[s.id]===false) return;
+      if(!META[s.id]||!META[s.id].p) return;
+      out.push({
+        id:s.id,
+        name:metaName(s.id),
+        nameAr:(META[s.id]&&META[s.id].ar)||"",
+        timeMs:s.time.getTime(),
+        timeIso:s.time.toISOString(),
+        local:fmtTime(s.time,loc.timezone),
+        dayOffset:d,
+        azan:!!ST.azanEnabled
+      });
+    });
+  }
+  return out;
+}
+
+function getUmmahNotificationConfig(){
+  ensureNotifDefaults();
+  return {
+    enabled:!!ST.notifEnabled,
+    azan:!!ST.azanEnabled,
+    prayers:Object.assign({fajr:true,dhuhr:true,asr:true,maghrib:true,isha:true},ST.notifPrayers||{}),
+    location:ST.location,
+    method:ST.method,
+    madhab:ST.madhab,
+    lang:ST.lang||"ru",
+    schedule:buildNotificationSchedule(7)
+  };
+}
+
+function notifyAndroidSettings(){
+  var cfg=getUmmahNotificationConfig();
+  try{
+    if(window.AndroidBridge){
+      if(AndroidBridge.onPrayerSettingsChanged) AndroidBridge.onPrayerSettingsChanged(JSON.stringify(cfg));
+      if(AndroidBridge.schedulePrayerNotifications) AndroidBridge.schedulePrayerNotifications(JSON.stringify(cfg.schedule));
+    }
+  }catch(e){}
+  try{
+    if(window.Android){
+      if(Android.onPrayerSettingsChanged) Android.onPrayerSettingsChanged(JSON.stringify(cfg));
+      if(Android.schedulePrayerNotifications) Android.schedulePrayerNotifications(JSON.stringify(cfg.schedule));
+    }
+  }catch(e){}
+}
+
+window.UmmahNative={
+  getNotificationConfig:getUmmahNotificationConfig,
+  getSchedule:function(days){return buildNotificationSchedule(days||7);},
+  getPrayerTimesToday:function(){
+    try{
+      return (schedule(new Date()).slots||[]).map(function(s){
+        return {id:s.id,name:metaName(s.id),timeMs:s.time.getTime(),timeIso:s.time.toISOString(),local:fmtTime(s.time,ST.location.timezone)};
+      });
+    }catch(e){return [];}
+  },
+  getSettings:function(){return getUmmahNotificationConfig();},
+  setNotifEnabled:function(v){save({notifEnabled:!!v});notifyAndroidSettings();},
+  setAzanEnabled:function(v){save({azanEnabled:!!v});notifyAndroidSettings();},
+  setPrayerNotif:function(id,v){
+    var np=Object.assign({fajr:true,dhuhr:true,asr:true,maghrib:true,isha:true},ST.notifPrayers||{});
+    np[id]=!!v; save({notifPrayers:np}); notifyAndroidSettings();
+  }
+};
+window.AndroidUmmah=window.UmmahNative;
+
+
 function applyTheme(){
   const allowed=["dark","light","olive","blue","green","violet"];
   const t=allowed.indexOf(ST.theme)>=0?ST.theme:"dark";
@@ -737,6 +917,28 @@ function settingsView(){
         '<button type="button" data-act="lang-tt" class="'+(lang==="tt"?"on":"")+'">'+t("lang_tt")+'</button>'+
         '<button type="button" data-act="lang-en" class="'+(lang==="en"?"on":"")+'">'+t("lang_en")+'</button>'+
       '</div>'+
+    '</div>'+
+    '<div class="settings-card">'+
+      '<h2>'+t("notif_title")+'</h2>'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.65rem 0">'+
+        '<div style="flex:1;min-width:0"><div style="font-weight:600">'+t("notif_enable")+'</div><div class="sub" style="font-size:.85rem;color:var(--muted)">'+t("notif_enable_sub")+'</div></div>'+
+        '<button type="button" data-act="notif-toggle" style="min-width:4.5rem;padding:.55rem .9rem;border-radius:999px;border:1px solid var(--border-strong);background:'+(ST.notifEnabled?"var(--accent)":"var(--surface-2)")+';color:'+(ST.notifEnabled?"var(--accent-fg)":"var(--fg)")+'">'+ (ST.notifEnabled?t("notif_on"):t("notif_off")) +'</button>'+
+      '</div>'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.65rem 0">'+
+        '<div style="flex:1;min-width:0"><div style="font-weight:600">'+t("azan_enable")+'</div><div class="sub" style="font-size:.85rem;color:var(--muted)">'+t("azan_enable_sub")+'</div></div>'+
+        '<button type="button" data-act="azan-toggle" style="min-width:4.5rem;padding:.55rem .9rem;border-radius:999px;border:1px solid var(--border-strong);background:'+(ST.azanEnabled?"var(--accent)":"var(--surface-2)")+';color:'+(ST.azanEnabled?"var(--accent-fg)":"var(--fg)")+'">'+ (ST.azanEnabled?t("notif_on"):t("notif_off")) +'</button>'+
+      '</div>'+
+      '<p style="margin:1rem 0 .4rem;font-weight:600;font-size:.95rem">'+t("notif_prayers")+'</p>'+
+      ["fajr","dhuhr","asr","maghrib","isha"].map(function(pid){
+        var on=!(ST.notifPrayers&&ST.notifPrayers[pid]===false);
+        var tm="";
+        try{ var sch=schedule(new Date()); var sl=sch.slots.find(function(s){return s.id===pid;}); if(sl) tm=fmtTime(sl.time,ST.location.timezone); }catch(e){}
+        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.55rem 0;border-top:1px solid var(--border)">'+
+          '<div><div style="font-weight:600">'+metaName(pid)+'</div><div class="sub" style="font-size:.85rem;color:var(--muted)">'+(tm||"—")+'</div></div>'+
+          '<button type="button" data-act="notif-prayer-'+pid+'" style="min-width:4.5rem;padding:.5rem .85rem;border-radius:999px;border:1px solid var(--border-strong);background:'+(on?"var(--accent)":"var(--surface-2)")+';color:'+(on?"var(--accent-fg)":"var(--fg)")+'">'+ (on?t("notif_on"):t("notif_off")) +'</button>'+
+        '</div>';
+      }).join("")+
+      '<button type="button" class="btn" data-act="notif-permission" style="margin-top:1.25rem;width:100%">'+ (typeof Notification!=="undefined"&&Notification.permission==="granted"?t("notif_allowed"):typeof Notification!=="undefined"&&Notification.permission==="denied"?t("notif_denied"):t("notif_allow")) +'</button>'+
     '</div>'+
     '<div class="settings-card">'+
       '<h2>'+t("contact")+'</h2>'+
@@ -794,6 +996,10 @@ document.body.addEventListener("click",function(e){
   if(a==="open-settings"){tab="settings";locOpen=false;selName=null;dMode=null;render();return}
   if(a==="close-settings"){tab="prayer";render();return}
   if(a&&a.indexOf("theme-")===0){var th=a.slice(6);if(["dark","light","olive","blue","green","violet"].indexOf(th)>=0){save({theme:th});applyTheme();render();return}}
+  if(a==="notif-toggle"){save({notifEnabled:!ST.notifEnabled});try{notifyAndroidSettings()}catch(e){}render();return}
+  if(a==="azan-toggle"){save({azanEnabled:!ST.azanEnabled});try{notifyAndroidSettings()}catch(e){}render();return}
+  if(a&&a.indexOf("notif-prayer-")===0){var pid=a.slice(13);var np=Object.assign({fajr:true,dhuhr:true,asr:true,maghrib:true,isha:true},ST.notifPrayers||{});np[pid]=!(np[pid]!==false);save({notifPrayers:np});try{notifyAndroidSettings()}catch(e){}render();return}
+  if(a==="notif-permission"){requestNotifPermission();return}
   if(a==="lang-ru"){save({lang:"ru"});updateNav();render();return}
   if(a==="lang-tt"){save({lang:"tt"});updateNav();render();return}
   if(a==="lang-en"){save({lang:"en"});updateNav();render();return}
@@ -801,7 +1007,7 @@ document.body.addEventListener("click",function(e){
   else if(a==="close-loc"){locOpen=false;render()}
   else if(a==="close-name"){selName=null;render()}
   else if(a==="geo"){
-    if(!navigator.geolocation){geoErr="Геолокация недоступна. В APK включите ACCESS_FINE_LOCATION в манифесте.";render();return}
+    if(!navigator.geolocation){geoErr="Геолокация недоступна. В приложении нужна геолокация (ACCESS_FINE_LOCATION).";render();return}
     geoBusy=true;geoErr="";render();
     navigator.geolocation.getCurrentPosition(function(pos){
       const lat=pos.coords.latitude,lng=pos.coords.longitude;
@@ -849,9 +1055,11 @@ document.body.addEventListener("click",function(e){
   else if(t.dataset.city){
     const c=CITIES.find(x=>x.id===t.dataset.city);
     save({location:{kind:"city",cityId:c.id,name:c.name,lat:c.lat,lng:c.lng,timezone:c.timezone}});
-    locOpen=false;locQ="";render();
+    locOpen=false;locQ="";
+    if(ST.method==="DUM_RT") ensureDumRtLoaded();
+    render();
   }
-  else if(t.dataset.method){save({method:t.dataset.method});render()}
+  else if(t.dataset.method){save({method:t.dataset.method});if(t.dataset.method==="DUM_RT"){ensureDumRtLoaded();}render()}
   else if(t.dataset.madhab){save({madhab:t.dataset.madhab});render()}
   else if(t.dataset.nid){selName=NAMES.find(n=>n.id===+t.dataset.nid);render()}
   else if(t.dataset.did){const d=DHIKRS.find(x=>x.id===t.dataset.did);dMode={kind:"single",id:d.id,target:d.defaultTarget};render()}
@@ -990,6 +1198,7 @@ if(["ru","tt","en"].indexOf(ST.lang)<0) ST.lang="ru";
 })();
 
 applyTheme();
+ensureDumRtLoaded();
 render();
 
 function tickPrayer(){
