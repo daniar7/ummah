@@ -426,11 +426,14 @@ function civilDate(now,tz){
 
 /* ===== ДУМ РТ: официальная таблица 2026–2035 ===== */
 
+
+
 var DUM_RT_CACHE={};
 var DUM_RT_MAP=null;
 var DUM_RT_LOADING=null;
-var DUM_RT_ACTIVE=false; // true only when table row actually used
+var DUM_RT_ACTIVE=false;
 var DUM_RT_MAP_EMBED={"Агрыз":"agryz","Азнакаево":"aznakaevo","Аксубаево":"aksubaevo","Актаныш":"aktanysh","Алексеевское":"alekseevskoe","Альметьевск":"almetevsk","Апастово":"apastovo","Арск":"arsk","Астрахань":"astrahan","Бавлы":"bavly","Базарные Матаки":"bazarnye-mataki","Балтаси":"baltasi","Барнаул":"barnaul","Бахчисарай":"bahchisaray","Белгород":"belgorod","Богатые Сабы":"bogatye-saby","Болгар":"bolgar","Большая Атня":"bolshaya-atnya","Большие Кайбицы":"bolshie-kaybitsy","Брянск":"bryansk","Бугульма":"bugulma","Буинск":"buinsk","Верхний Услон":"verhniy-uslon","Владивосток":"vladivostok","Волгоград":"volgograd","Воронеж":"voronezh","Высокая Гора":"vysokaya-gora","Грозный":"groznyy","Екатеринбург":"ekaterinburg","Елабуга":"elabuga","Заинск":"zainsk","Зеленодольск":"zelenodolsk","Иваново":"ivanovo","Ижевск":"izhevsk","Иркутск":"irkutsk","Казань":"kazan","Калининград":"kaliningrad","Камское Устье":"kamskoe-uste","Кемерово":"kemerovo","Киров":"kirov","Краснодар":"krasnodar","Красноярск":"krasnoyarsk","Кукмор":"kukmor","Курск":"kursk","Лаишево":"laishevo","Лениногорск":"leninogorsk","Липецк":"lipetsk","Магнитогорск":"magnitogorsk","Мамадыш":"mamadysh","Махачкала":"mahachkala","Менделеевск":"mendeleevsk","Мензелинск":"menzelinsk","Москва":"moskva","Муслюмово":"muslyumovo","Набережные Челны":"naberezhnye-chelny","Нижнекамск":"nizhnekamsk","Нижний Новгород":"nizhniy-novgorod","Нижний Тагил":"nizhniy-tagil","Новокузнецк":"novokuznetsk","Новосибирск":"novosibirsk","Новошешминск":"novosheshminsk","Нурлат":"nurlat","Октябрьский":"oktyabrskiy","Омск":"omsk","Оренбург":"orenburg","Пенза":"penza","Пермь":"perm","Пестрецы":"pestretsy","Ростов-на-Дону":"rostov-na-donu","Рыбная Слобода":"rybnaya-sloboda","Рязань":"ryazan","Самара":"samara","Санкт-Петербург":"sankt-peterburg","Саратов":"saratov","Сарманово":"sarmanovo","Севастополь":"sevastopol","Симферополь":"simferopol","Сочи":"sochi","Ставрополь":"stavropol","Старое Дрожжаное":"staroe-drozhzhanoe","Тверь":"tver","Тетюши":"tetyushi","Тольятти":"tolyatti","Томск":"tomsk","Туймазы":"tuymazy","Тула":"tula","Тюлячи":"tyulyachi","Тюмень":"tyumen","Улан-Удэ":"ulan-ude","Ульяновск":"ulyanovsk","Уруссу":"urussu","Уфа":"ufa","Хабаровск":"habarovsk","Чебоксары":"cheboksary","Челябинск":"chelyabinsk","Черемшан":"cheremshan","Чистополь":"chistopol","Ялта":"yalta","Ярославль":"yaroslavl"};
+window.DUM_RT_STORE=window.DUM_RT_STORE||{};
 
 function dumRtYmd(date,tz){
   try{
@@ -442,36 +445,111 @@ function dumRtYmd(date,tz){
 }
 function dumRtMinsToDate(baseDate,mins){
   var y=baseDate.getFullYear(),m=baseDate.getMonth(),d=baseDate.getDate();
-  var hh=Math.floor(mins/60)%24, mm=mins%60;
-  if(mins<0){hh=0;mm=0;}
+  var hh=Math.floor(mins/60)%24, mm=((mins%60)+60)%60;
   return new Date(y,m,d,hh,mm,0,0);
 }
 function loadDumRtMap(){
   if(DUM_RT_MAP) return Promise.resolve(DUM_RT_MAP);
   if(typeof DUM_RT_MAP_EMBED==="object"&&DUM_RT_MAP_EMBED){ DUM_RT_MAP=DUM_RT_MAP_EMBED; return Promise.resolve(DUM_RT_MAP); }
-  return fetch("dum_rt_map.json").then(function(r){ if(!r.ok) throw 0; return r.json(); })
-    .then(function(j){ DUM_RT_MAP=j; return j; })
-    .catch(function(){ DUM_RT_MAP=DUM_RT_MAP_EMBED||{}; return DUM_RT_MAP; });
+  return Promise.resolve({});
 }
-function dumRtFetchJson(url){
-  return fetch(url).then(function(r){ if(!r.ok) throw new Error("fail"); return r.json(); });
+function dumRtXHR(url){
+  return new Promise(function(resolve,reject){
+    try{
+      var x=new XMLHttpRequest();
+      x.open("GET",url,true);
+      x.onreadystatechange=function(){
+        if(x.readyState===4){
+          if(x.status>=200&&x.status<300){
+            try{ resolve(JSON.parse(x.responseText)); }catch(e){ reject(e); }
+          } else reject(new Error("status "+x.status));
+        }
+      };
+      x.onerror=function(){ reject(new Error("xhr")); };
+      x.send();
+    }catch(e){ reject(e); }
+  });
+}
+function dumRtFetch(url){
+  // try fetch then XHR (WebView sometimes allows one but not the other)
+  if(typeof fetch==="function"){
+    return fetch(url).then(function(r){ if(!r.ok) throw new Error("fail"); return r.json(); })
+      .catch(function(){ return dumRtXHR(url); });
+  }
+  return dumRtXHR(url);
+}
+function loadScript(url){
+  return new Promise(function(resolve,reject){
+    var s=document.createElement("script");
+    s.async=true;
+    s.src=url;
+    s.onload=function(){ resolve(true); };
+    s.onerror=function(){ reject(new Error("script")); };
+    document.head.appendChild(s);
+  });
+}
+function dumRtCandidateUrls(name, slug){
+  var enc=encodeURIComponent(name);
+  var list=[];
+  // A) as user uploaded on GitHub: Cyrillic JSON in ROOT
+  list.push(name+".json");
+  list.push(enc+".json");
+  list.push("./"+name+".json");
+  list.push("./"+enc+".json");
+  // B) dum_rt folder, Cyrillic
+  list.push("dum_rt/"+name+".json");
+  list.push("dum_rt/"+enc+".json");
+  // C) dum_rt folder, latin slug
+  if(slug){
+    list.push("dum_rt/"+slug+".json");
+    list.push("dum_rt/"+slug+".js");
+    list.push("./dum_rt/"+slug+".json");
+    list.push("./dum_rt/"+slug+".js");
+  }
+  // D) Android assets absolute
+  list.push("file:///android_asset/"+enc+".json");
+  list.push("file:///android_asset/"+name+".json");
+  if(slug){
+    list.push("file:///android_asset/dum_rt/"+slug+".json");
+    list.push("file:///android_asset/dum_rt/"+slug+".js");
+  }
+  list.push("file:///android_asset/dum_rt/"+enc+".json");
+  return list;
 }
 function loadDumRtCity(name){
   if(!name) return Promise.resolve(null);
   if(DUM_RT_CACHE[name]) return Promise.resolve(DUM_RT_CACHE[name]);
+  if(window.DUM_RT_STORE&&window.DUM_RT_STORE[name]){
+    DUM_RT_CACHE[name]=window.DUM_RT_STORE[name];
+    return Promise.resolve(DUM_RT_CACHE[name]);
+  }
   if(DUM_RT_LOADING&&DUM_RT_LOADING.name===name) return DUM_RT_LOADING.p;
+
   var p=loadDumRtMap().then(function(map){
     var slug=map&&map[name];
-    if(!slug) return null;
-    // Several base paths: web, relative, Android assets
-    var bases=["","file:///android_asset/","./"];
-    var urls=[];
-    bases.forEach(function(b){ urls.push(b+"dum_rt/"+slug+".json"); });
+    var urls=dumRtCandidateUrls(name, slug);
     var i=0;
     function next(){
       if(i>=urls.length) return null;
       var u=urls[i++];
-      return dumRtFetchJson(u).then(function(j){ DUM_RT_CACHE[name]=j; return j; }, function(){ return next(); });
+      // .js via script tag
+      if(/\.js$/i.test(u)){
+        return loadScript(u).then(function(){
+          if(window.DUM_RT_STORE&&window.DUM_RT_STORE[name]){
+            DUM_RT_CACHE[name]=window.DUM_RT_STORE[name];
+            return DUM_RT_CACHE[name];
+          }
+          return next();
+        }, function(){ return next(); });
+      }
+      // .json via fetch/XHR
+      return dumRtFetch(u).then(function(j){
+        if(!j||typeof j!=="object") return next();
+        DUM_RT_CACHE[name]=j;
+        window.DUM_RT_STORE=window.DUM_RT_STORE||{};
+        window.DUM_RT_STORE[name]=j;
+        return j;
+      }, function(){ return next(); });
     }
     return next();
   });
@@ -480,15 +558,16 @@ function loadDumRtCity(name){
 }
 function computePT_DUM_RT(loc,date,madhab){
   var name=loc&&loc.name;
+  if(name&&!DUM_RT_CACHE[name]&&window.DUM_RT_STORE&&window.DUM_RT_STORE[name]){
+    DUM_RT_CACHE[name]=window.DUM_RT_STORE[name];
+  }
   var table=name&&DUM_RT_CACHE[name];
   if(!table) return null;
   var ymd=dumRtYmd(date,loc.timezone);
   var row=table[ymd];
   if(!row) return null;
-  // Excel: [mosqueFajr, sunrise, zawal/zenith, asrShafi, asrHanafi, maghrib, isha]
-  // Official DUM RT site: Зухр = 12:00 (mosque time), Зенит = zawal
   var asrMins=(madhab==="Hanafi")?row[4]:row[3];
-  var dhuhrMins=12*60; // as published on DUM RT / islam-today (Зухр)
+  var dhuhrMins=12*60; // как на сайте ДУМ РТ (Зухр), не зенит
   return {
     fajr:dumRtMinsToDate(date,row[0]),
     sunrise:dumRtMinsToDate(date,row[1]),
@@ -504,6 +583,10 @@ function ensureDumRtLoaded(){
   if(ST.method!=="DUM_RT") return;
   var name=ST.location&&ST.location.name;
   if(!name) return;
+  if(window.DUM_RT_STORE&&window.DUM_RT_STORE[name]){
+    DUM_RT_CACHE[name]=window.DUM_RT_STORE[name];
+    return;
+  }
   loadDumRtCity(name).then(function(j){ try{ render(); }catch(e){} });
 }
 
